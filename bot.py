@@ -3,8 +3,8 @@ import requests
 import discord
 from discord.ext import commands
 
-API_KEY = ""  # Вставь сюда свой API ключ
-TOKEN = ""    # Вставь сюда свой Discord токен
+API_KEY = "MTQwNDk1ODY2NjYwNzU1ODcwNg.GKn4Hu.13WlMdPLIl_1hlgyklygIKtjECW1Axlffbp1rA"  # Вставь сюда свой API ключ
+TOKEN = "d9f4dc18231059d9491e5533"    # Вставь сюда свой Discord токен
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -14,8 +14,8 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 CURRENCY_KEYWORDS = {
     "usd": "USD", "dolar": "USD", "dolary": "USD", "dolarów": "USD", "$": "USD",
     "eur": "EUR", "euro": "EUR", "€": "EUR",
-    "pln": "PLN", "zloty": "PLN", "zł": "PLN",
-    "uah": "UAH", "hrywna": "UAH", "hryw": "UAH",
+    "pln": "PLN", "zloty": "PLN", "zl": "PLN",
+    "uah": "UAH", "hrywna": "UAH", "hrw": "UAH",
     "gbp": "GBP", "funt": "GBP", "£": "GBP"
 }
 
