@@ -1,30 +1,23 @@
+import os
 import re
 import requests
 import discord
 from discord.ext import commands
+from dotenv import load_dotenv
 
-API_KEY = "d9f4dc18231059d9491e5533"  # Вставь сюда свой API ключ
-TOKEN = "MTQwNDk1ODY2NjYwNzU1ODcwNg.GKn4Hu.13WlMdPLIl_1hlgyklygIKtjECW1Axlffbp1rA"    # Вставь сюда свой Discord токен
+# Загружаем переменные окружения из .env
+load_dotenv()
 
+TOKEN = os.getenv("DISCORD_TOKEN")
+API_URL = "https://v6.exchangerate-api.com/v6/d9f4dc18231059d9491e5533/latest/"
+
+# Настройка бота
 intents = discord.Intents.default()
 intents.message_content = True
-
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-CURRENCY_KEYWORDS = {
-    "usd": "USD", "dolar": "USD", "dolary": "USD", "dolarów": "USD", "$": "USD",
-    "eur": "EUR", "euro": "EUR", "€": "EUR",
-    "pln": "PLN", "zloty": "PLN", "zl": "PLN",
-    "uah": "UAH", "hrywna": "UAH", "hrw": "UAH",
-    "gbp": "GBP", "funt": "GBP", "£": "GBP"
-}
-
-def convert_currency(amount, from_currency, to_currency):
-    url = f"https://v6.exchangerate-api.com/v6/{API_KEY}/pair/{from_currency}/{to_currency}/{amount}"
-    r = requests.get(url).json()
-    if r.get("result") == "error":
-        return None
-    return r.get("conversion_result")
+# Регулярка для поиска суммы и валюты
+pattern = r"(\d+(?:\.\d+)?)\s*(USD|EUR|PLN|GBP|UAH)"
 
 @bot.event
 async def on_ready():
@@ -35,36 +28,29 @@ async def on_message(message):
     if message.author.bot:
         return
 
-    text = message.content.lower()
-    matches = re.findall(r"(\d+(?:[.,]\d+)?)\s*([a-zA-Ząćęłńóśźż$€£]+)", text)
+    match = re.search(pattern, message.content, re.IGNORECASE)
+    if match:
+        amount = float(match.group(1))
+        currency = match.group(2).upper()
 
-    if matches:
-        reply_lines = []
-        for amount_str, currency_word in matches:
-            try:
-                amount = float(amount_str.replace(",", "."))
-            except ValueError:
-                continue
+        response = requests.get(API_URL + currency)
+        if response.status_code == 200:
+            data = response.json()
+            rates = data.get("conversion_rates", {})
 
-            from_currency = None
-            for word, code in CURRENCY_KEYWORDS.items():
-                if word in currency_word:
-                    from_currency = code
-                    break
+            if rates:
+                eur = amount * rates.get("EUR", 0)
+                pln = amount * rates.get("PLN", 0)
+                uah = amount * rates.get("UAH", 0)
+                gbp = amount * rates.get("GBP", 0)
 
-            if from_currency:
-                target_currencies = ["USD", "EUR", "UAH", "PLN", "GBP"]
-                target_currencies.remove(from_currency)
-                results = []
-                for cur in target_currencies:
-                    converted = convert_currency(amount, from_currency, cur)
-                    if converted is not None:
-                        results.append(f"{converted:.2f} {cur}")
-                if results:
-                    reply_lines.append(f"{amount} {from_currency} = " + ", ".join(results))
-
-        if reply_lines:
-            await message.channel.send("\n".join(reply_lines))
+                await message.channel.send(
+                    f"💱 {amount} {currency}:\n"
+                    f"🇪🇺 {eur:.2f} EUR\n"
+                    f"🇵🇱 {pln:.2f} PLN\n"
+                    f"🇺🇦 {uah:.2f} UAH\n"
+                    f"🇬🇧 {gbp:.2f} GBP"
+                )
 
     await bot.process_commands(message)
 
